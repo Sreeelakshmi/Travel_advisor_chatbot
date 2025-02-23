@@ -46,6 +46,9 @@ seven_sisters_info = {
 
 def get_state_info(state):
     state = state.strip().title()
+    greetings = ["hi", "hello", "hey", "greetings"]
+    if state.lower() in greetings:
+        return "Hello! How can I assist you with your travel plans?"
     for key in seven_sisters_info.keys():
         if state in key:
             info = seven_sisters_info[key]
@@ -56,7 +59,7 @@ def get_state_info(state):
                     f"- **Culture:** {info['Culture']}\n"
                     f"- **Nearby Attractions:** {info['Nearby Attractions']}\n"
                     f"- **History:** {info['History']}")
-    return "Sorry, I don't have detailed information on that state. Try specifying a state from the Seven Sisters."
+    return "Sorry, I don't have detailed information on that location. Try specifying a well-known destination."
 
 st.set_page_config(page_title="Seven Sisters Travel Guide", layout="wide")
 st.sidebar.title("🔍 Travel Search")
