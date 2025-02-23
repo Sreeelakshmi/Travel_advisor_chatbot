@@ -53,8 +53,6 @@ st.write("Hello! I'm your travel assistant. How can I help you today?")
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
-user_input = st.text_input("You:", "", key="user_input")
-
 def process_input(user_input):
     if "package" in user_input.lower():
         result = get_best_match(user_input)
@@ -82,11 +80,17 @@ def process_input(user_input):
     else:
         return "🤖 I'm here to help! Ask me about travel packages, destinations, or activities."
 
+# Display conversation history above input field
+for message in st.session_state.conversation:
+    st.write(message)
+
+# User input field
+user_input = st.text_input("You:", "", key="user_input")
+
 if user_input:
     st.session_state.conversation.append(f"You: {user_input}")
     response = process_input(user_input)
     st.session_state.conversation.append(f"Bot: {response}")
-
-# Display conversation history
-for message in st.session_state.conversation:
-    st.write(message)
+    
+    # Clear input field after response
+    st.experimental_rerun()
