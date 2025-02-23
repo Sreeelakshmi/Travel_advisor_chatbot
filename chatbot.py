@@ -47,34 +47,50 @@ def get_best_match(query, budget=None, transport=None, family_friendly=None):
 
 # Streamlit UI
 st.title("🌍 Explore Northeast India: Travel Chatbot")
-st.write("Discover the best travel experiences in the Seven Sisters of India!")
+st.write("Hello! I'm your travel assistant. How can I help you today?")
 
-# User Inputs
-query = st.text_input("What are you looking for?")
-budget = st.selectbox("Select Budget Level", ["Any", "Low", "Medium", "High"])
-transport = st.selectbox("Preferred Mode of Transport", ["Any", "Car", "Bus", "Train", "Flight"])
-family_friendly = st.radio("Family-Friendly?", ["Any", "Yes", "No"])
+# Chatbot-style interaction
+if "conversation" not in st.session_state:
+    st.session_state.conversation = []
 
-# Convert 'Any' to None
-def convert_none(value):
-    return None if value == "Any" else value
+user_input = st.text_input("You:")
 
-budget = convert_none(budget)
-transport = convert_none(transport)
-family_friendly = convert_none(family_friendly)
-
-if query:
-    result = get_best_match(query, budget, transport, family_friendly)
+if user_input:
+    st.session_state.conversation.append(f"You: {user_input}")
     
-    if result is not None:
-        st.subheader("🎯 Recommended Package")
-        st.write(f"**State:** {result['State']}")
-        st.write(f"**Weather:** {result['Weather']}")
-        st.write(f"**Activities:** {result['Activities']}")
-        st.write(f"**Cultural Highlights:** {result['Cultural Highlights']}")
-        st.write(f"**Budget Level:** {result['Budget Level']}")
-        st.write(f"**Budget (INR):** {result['Budget (INR)']}")
-        st.write(f"**Transportation Options:** {result['Transportation Options']}")
-        st.write(f"**Family-Friendly:** {result['Family-Friendly']}")
+    if "package" in user_input.lower():
+        st.write("Let's find the perfect package for you! Answer a few questions:")
+        budget = st.selectbox("Select Budget Level", ["Any", "Low", "Medium", "High"])
+        transport = st.selectbox("Preferred Mode of Transport", ["Any", "Car", "Bus", "Train", "Flight"])
+        family_friendly = st.radio("Family-Friendly?", ["Any", "Yes", "No"])
+        
+        # Convert 'Any' to None
+        def convert_none(value):
+            return None if value == "Any" else value
+        
+        budget = convert_none(budget)
+        transport = convert_none(transport)
+        family_friendly = convert_none(family_friendly)
+        
+        result = get_best_match(user_input, budget, transport, family_friendly)
+        
+        if result is not None:
+            response = (f"🎯 Recommended Package:\n"
+                        f"**State:** {result['State']}\n"
+                        f"**Weather:** {result['Weather']}\n"
+                        f"**Activities:** {result['Activities']}\n"
+                        f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
+                        f"**Budget Level:** {result['Budget Level']}\n"
+                        f"**Budget (INR):** {result['Budget (INR)']}\n"
+                        f"**Transportation Options:** {result['Transportation Options']}\n"
+                        f"**Family-Friendly:** {result['Family-Friendly']}")
+        else:
+            response = "🤖 Sorry, no relevant packages found."
     else:
-        st.write("🤖 Sorry, no relevant packages found.")
+        response = "I'm here to help! Ask me about travel packages, destinations, or activities."
+    
+    st.session_state.conversation.append(f"Bot: {response}")
+
+# Display conversation history
+for message in st.session_state.conversation:
+    st.write(message)
