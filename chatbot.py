@@ -57,7 +57,24 @@ if "user_input" not in st.session_state:
 
 def process_input(user_input):
     if "package" in user_input.lower():
-        result = get_best_match(user_input)
+        st.session_state.asking_filters = True
+        return "🛫 Do you have any preferences? (Budget, Transport, Family-friendly)"
+    
+    if st.session_state.get("asking_filters", False):
+        filters = user_input.lower().split(",")
+        budget = transport = family_friendly = None
+        
+        for f in filters:
+            if "budget" in f:
+                budget = f.split("=")[-1].strip()
+            elif "transport" in f:
+                transport = f.split("=")[-1].strip()
+            elif "family" in f:
+                family_friendly = f.split("=")[-1].strip()
+        
+        result = get_best_match("travel package", budget, transport, family_friendly)
+        st.session_state.asking_filters = False
+        
         if result is not None:
             return (f"🎯 **Recommended Package:**\n"
                     f"**State:** {result['State']}\n"
@@ -70,6 +87,7 @@ def process_input(user_input):
                     f"**Family-Friendly:** {result['Family-Friendly']}")
         else:
             return "🤖 Sorry, no relevant packages found."
+    
     elif "location" in user_input.lower():
         locations = df["State"].unique()
         return "📍 **Available Locations:** " + ", ".join(locations)
@@ -87,7 +105,7 @@ for message in st.session_state.conversation:
     st.write(message)
 
 # User input field
-user_input = st.text_input("You:", value=st.session_state.user_input, key="user_input_field")
+user_input = st.text_input("You:", value="", key="user_input_field")
 if st.button("Send"):
     if user_input.strip():
         st.session_state.conversation.append(f"You: {user_input}")
@@ -95,5 +113,4 @@ if st.button("Send"):
         st.session_state.conversation.append(f"Bot: {response}")
         
         # Clear user input field
-        st.session_state.user_input = ""
         st.rerun()
