@@ -54,7 +54,7 @@ if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
 st.write("### Choose a topic to explore:")
-option = st.radio("Select an option:", ["Travel Packages", "Locations", "Best Places to Visit", "Weather Information"])
+option = st.radio("Select an option:", ["Travel Packages", "Locations", "Best Places to Visit", "Weather Information", "Local Cuisine", "Adventure Activities", "Festivals & Events"])
 
 if option == "Travel Packages":
     st.write("🛫 Do you have any preferences?")
@@ -85,9 +85,38 @@ elif option == "Locations":
     st.write("📍 **Available Locations:** " + ", ".join(locations))
 
 elif option == "Best Places to Visit":
-    best_places = df.sort_values(by="Budget (INR)", ascending=False)["State"].unique()[:5]
-    st.write("🌟 **Best Places to Visit:** " + ", ".join(best_places))
+    state = st.selectbox("Select a state:", df["State"].unique())
+    best_places = df[df["State"] == state]["Activities"].explode().dropna().unique()
+    if best_places.size > 0:
+        st.write(f"🌟 **Best Places to Visit in {state}:** " + ", ".join(best_places))
+    else:
+        st.write(f"🤖 No specific recommendations available for {state}.")
 
 elif option == "Weather Information":
     weather_info = df.groupby("State")["Weather"].first().to_dict()
-    st.write("☁️ **Weather Information:**\n" + "\n".join([f"{state}: {weather}" for state, weather in weather_info.items()]))
+    for state, weather in weather_info.items():
+        st.write(f"☁️ **{state}:** {weather}")
+
+elif option == "Local Cuisine":
+    state = st.selectbox("Select a state:", df["State"].unique())
+    cuisines = df[df["State"] == state]["Cuisines"].dropna().unique()
+    if cuisines.size > 0:
+        st.write(f"🍽️ **Famous Cuisines in {state}:** " + ", ".join(cuisines))
+    else:
+        st.write(f"🤖 No cuisine data available for {state}.")
+
+elif option == "Adventure Activities":
+    activity = st.text_input("Enter an adventure activity (e.g., Trekking, Rafting, Paragliding):")
+    states_with_activity = df[df["Activities"].str.contains(activity, case=False, na=False)]["State"].unique()
+    if states_with_activity.size > 0:
+        st.write(f"🎢 **States offering {activity}:** " + ", ".join(states_with_activity))
+    else:
+        st.write(f"🤖 No states found for {activity}.")
+
+elif option == "Festivals & Events":
+    state = st.selectbox("Select a state:", df["State"].unique())
+    festivals = df[df["State"] == state]["Cultural Highlights"].dropna().unique()
+    if festivals.size > 0:
+        st.write(f"🎉 **Major Festivals in {state}:** " + ", ".join(festivals))
+    else:
+        st.write(f"🤖 No festival data available for {state}.")
