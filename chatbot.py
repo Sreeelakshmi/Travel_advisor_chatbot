@@ -60,7 +60,6 @@ def get_state_info(state):
 
 st.set_page_config(page_title="Seven Sisters Travel Guide", layout="wide")
 st.sidebar.title("🔍 Travel Search")
-query = st.sidebar.text_input("Enter your query:")
 budget = st.sidebar.selectbox("Select Budget:", ["Any", "Low", "Medium", "High"])
 transport = st.sidebar.selectbox("Preferred Transport:", ["Any", "Bus", "Train", "Flight"])
 family_friendly = st.sidebar.checkbox("Family-Friendly")
@@ -71,7 +70,10 @@ st.write("Hello! I'm your travel assistant. How can I help you today? Type your 
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
-if query:
+query = st.text_input("Enter your query:", key="query_input")
+send = st.button("Send")
+
+if send and query:
     st.session_state.conversation.append(f"🧑‍💻 You: {query}")
     response = get_state_info(query)
     st.session_state.conversation.append(f"🤖 Bot: {response}")
