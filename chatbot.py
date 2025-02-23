@@ -29,7 +29,7 @@ def get_best_match(query):
         return None
 
 # Streamlit UI
-st.title("🗺️ Seven Sisters Travel Chatbot")
+st.title("\U0001F30D Seven Sisters Travel Chatbot")
 st.write("Ask about travel packages in Northeast India!")
 
 # Quick question buttons
@@ -48,7 +48,7 @@ if query:
     result = get_best_match(query)
     
     if result is not None:
-        st.subheader("🎯 Recommended Package")
+        st.subheader("\U0001F3AF Recommended Package")
         st.write(f"**Destination:** {result['Destination']}")
         st.write(f"**Description:** {result['Description']}")
         st.write(f"**Price:** {result['Price']}")
@@ -57,4 +57,4 @@ if query:
         if 'Image_URL' in result and pd.notna(result['Image_URL']):
             st.image(result['Image_URL'], caption=result['Destination'], use_column_width=True)
     else:
-        st.write("🤖 Sorry, no relevant packages found.")
+        st.write("\U0001F916 Sorry, no relevant packages found.")
