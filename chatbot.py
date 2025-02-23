@@ -4,11 +4,13 @@ import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# Download nltk data
+nltk.download("punkt")
+
 # Load dataset
 df = pd.read_csv("Seven_Sisters_Travel_Packages.csv")
 
 # Preprocess travel packages
-nltk.download("punkt")
 df["Processed"] = df["Destination"].fillna("") + " " + df["Description"].fillna("")
 
 # Train a TF-IDF model
@@ -22,16 +24,37 @@ def get_best_match(query):
     
     best_index = similarities.argmax()
     if similarities[best_index] > 0.1:
-        return df.iloc[best_index].to_dict()
+        return df.iloc[best_index]
     else:
-        return "Sorry, no relevant packages found."
+        return None
 
 # Streamlit UI
 st.title("🗺️ Seven Sisters Travel Chatbot")
 st.write("Ask about travel packages in Northeast India!")
 
-query = st.text_input("You: ")
+# Quick question buttons
+st.subheader("Quick Questions:")
+col1, col2, col3 = st.columns(3)
+if col1.button("Best package for adventure?"):
+    query = "adventure"
+elif col2.button("Budget-friendly tours?"):
+    query = "budget"
+elif col3.button("Cultural experiences?"):
+    query = "culture"
+else:
+    query = st.text_input("You: ")
 
 if query:
-    response = get_best_match(query)
-    st.write(f"🤖 Chatbot: {response}")
+    result = get_best_match(query)
+    
+    if result is not None:
+        st.subheader("🎯 Recommended Package")
+        st.write(f"**Destination:** {result['Destination']}")
+        st.write(f"**Description:** {result['Description']}")
+        st.write(f"**Price:** {result['Price']}")
+        
+        # Show image if available
+        if 'Image_URL' in result and pd.notna(result['Image_URL']):
+            st.image(result['Image_URL'], caption=result['Destination'], use_column_width=True)
+    else:
+        st.write("🤖 Sorry, no relevant packages found.")
