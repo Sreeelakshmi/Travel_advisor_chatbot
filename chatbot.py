@@ -11,7 +11,7 @@ nltk.download("punkt")
 df = pd.read_csv("Seven_Sisters_Travel_Packages.csv")
 
 # Preprocess travel packages
-df["Processed"] = df["Destination"].fillna("") + " " + df["Description"].fillna("")
+df["Processed"] = df["State"].fillna("") + " " + df["Weather"].fillna("") + " " + df["Activities"].fillna("") + " " + df["Cultural Highlights"].fillna("")
 
 # Train a TF-IDF model
 vectorizer = TfidfVectorizer()
@@ -29,15 +29,15 @@ def get_best_match(query):
         return None
 
 # Streamlit UI
-st.title("\U0001F30D Seven Sisters Travel Chatbot")
-st.write("Ask about travel packages in Northeast India!")
+st.title("🌍 Northeast India Travel Guide Chatbot")
+st.write("Explore the best travel options across the Seven Sisters states!")
 
 # Quick question buttons
 st.subheader("Quick Questions:")
 col1, col2, col3 = st.columns(3)
-if col1.button("Best package for adventure?"):
+if col1.button("Best adventure spots?"):
     query = "adventure"
-elif col2.button("Budget-friendly tours?"):
+elif col2.button("Budget-friendly trips?"):
     query = "budget"
 elif col3.button("Cultural experiences?"):
     query = "culture"
@@ -48,13 +48,16 @@ if query:
     result = get_best_match(query)
     
     if result is not None:
-        st.subheader("\U0001F3AF Recommended Package")
-        st.write(f"**Destination:** {result['Destination']}")
-        st.write(f"**Description:** {result['Description']}")
-        st.write(f"**Price:** {result['Price']}")
+        st.subheader("🎯 Recommended Travel Destination")
+        st.write(f"**State:** {result['State']}")
+        st.write(f"**Weather:** {result['Weather']}")
+        st.write(f"**Activities:** {result['Activities']}")
+        st.write(f"**Cultural Highlights:** {result['Cultural Highlights']}")
+        st.write(f"**Budget Level:** {result['Budget Level']}")
+        st.write(f"**Budget (INR):** {result['Budget (INR)']}")
         
         # Show image if available
         if 'Image_URL' in result and pd.notna(result['Image_URL']):
-            st.image(result['Image_URL'], caption=result['Destination'], use_column_width=True)
+            st.image(result['Image_URL'], caption=result['State'], use_column_width=True)
     else:
-        st.write("\U0001F916 Sorry, no relevant packages found.")
+        st.write("🤖 Sorry, no relevant travel options found.")
