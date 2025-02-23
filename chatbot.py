@@ -52,65 +52,42 @@ st.write("Hello! I'm your travel assistant. How can I help you today?")
 # Chatbot-style interaction
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""
 
-def process_input(user_input):
-    if "package" in user_input.lower():
-        st.session_state.asking_filters = True
-        return "🛫 Do you have any preferences? (Budget, Transport, Family-friendly)"
+st.write("### Choose a topic to explore:")
+option = st.radio("Select an option:", ["Travel Packages", "Locations", "Best Places to Visit", "Weather Information"])
+
+if option == "Travel Packages":
+    st.write("🛫 Do you have any preferences?")
+    budget = st.selectbox("Budget Level:", ["Low", "Medium", "High", "Any"], index=3)
+    transport = st.text_input("Preferred Transport (e.g., Car, Train, Flight):")
+    family_friendly = st.radio("Family-Friendly:", ["Yes", "No", "Any"], index=2)
     
-    if st.session_state.get("asking_filters", False):
-        filters = user_input.lower().split(",")
-        budget = transport = family_friendly = None
-        
-        for f in filters:
-            if "budget" in f:
-                budget = f.split("=")[-1].strip()
-            elif "transport" in f:
-                transport = f.split("=")[-1].strip()
-            elif "family" in f:
-                family_friendly = f.split("=")[-1].strip()
-        
+    if st.button("Find Package"):
+        budget = None if budget == "Any" else budget
+        family_friendly = None if family_friendly == "Any" else family_friendly
         result = get_best_match("travel package", budget, transport, family_friendly)
-        st.session_state.asking_filters = False
         
         if result is not None:
-            return (f"🎯 **Recommended Package:**\n"
-                    f"**State:** {result['State']}\n"
-                    f"**Weather:** {result['Weather']}\n"
-                    f"**Activities:** {result['Activities']}\n"
-                    f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
-                    f"**Budget Level:** {result['Budget Level']}\n"
-                    f"**Budget (INR):** {result['Budget (INR)']}\n"
-                    f"**Transportation Options:** {result['Transportation Options']}\n"
-                    f"**Family-Friendly:** {result['Family-Friendly']}")
+            st.write(f"🎯 **Recommended Package:**\n"
+                     f"**State:** {result['State']}\n"
+                     f"**Weather:** {result['Weather']}\n"
+                     f"**Activities:** {result['Activities']}\n"
+                     f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
+                     f"**Budget Level:** {result['Budget Level']}\n"
+                     f"**Budget (INR):** {result['Budget (INR)']}\n"
+                     f"**Transportation Options:** {result['Transportation Options']}\n"
+                     f"**Family-Friendly:** {result['Family-Friendly']}")
         else:
-            return "🤖 Sorry, no relevant packages found."
-    
-    elif "location" in user_input.lower():
-        locations = df["State"].unique()
-        return "📍 **Available Locations:** " + ", ".join(locations)
-    elif "best place to visit" in user_input.lower():
-        best_places = df.sort_values(by="Budget (INR)", ascending=False)["State"].unique()[:5]
-        return "🌟 **Best Places to Visit:** " + ", ".join(best_places)
-    elif "weather" in user_input.lower():
-        weather_info = df.groupby("State")["Weather"].first().to_dict()
-        return "☁️ **Weather Information:**\n" + "\n".join([f"{state}: {weather}" for state, weather in weather_info.items()])
-    else:
-        return "🤖 I'm here to help! Ask me about travel packages, destinations, or activities."
+            st.write("🤖 Sorry, no relevant packages found.")
 
-# Display conversation history above input field
-for message in st.session_state.conversation:
-    st.write(message)
+elif option == "Locations":
+    locations = df["State"].unique()
+    st.write("📍 **Available Locations:** " + ", ".join(locations))
 
-# User input field
-user_input = st.text_input("You:", value="", key="user_input_field")
-if st.button("Send"):
-    if user_input.strip():
-        st.session_state.conversation.append(f"You: {user_input}")
-        response = process_input(user_input)
-        st.session_state.conversation.append(f"Bot: {response}")
-        
-        # Clear user input field
-        st.rerun()
+elif option == "Best Places to Visit":
+    best_places = df.sort_values(by="Budget (INR)", ascending=False)["State"].unique()[:5]
+    st.write("🌟 **Best Places to Visit:** " + ", ".join(best_places))
+
+elif option == "Weather Information":
+    weather_info = df.groupby("State")["Weather"].first().to_dict()
+    st.write("☁️ **Weather Information:**\n" + "\n".join([f"{state}: {weather}" for state, weather in weather_info.items()]))
