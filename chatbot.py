@@ -47,76 +47,115 @@ def get_best_match(query, budget=None, transport=None, family_friendly=None):
 
 # Streamlit UI
 st.title("🌍 Explore Northeast India: Travel Chatbot")
-st.write("Hello! I'm your travel assistant. How can I help you today?")
+st.write("Hello! I'm your travel assistant. Ask me anything about travel packages, locations, activities, and more!")
 
 # Chatbot-style interaction
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
-st.write("### Choose a topic to explore:")
-option = st.radio("Select an option:", ["Travel Packages", "Locations", "Best Places to Visit", "Weather Information", "Local Cuisine", "Adventure Activities", "Festivals & Events"])
+user_input = st.text_input("You: ", "")
 
-if option == "Travel Packages":
-    st.write("🛫 Do you have any preferences?")
-    budget = st.selectbox("Budget Level:", ["Low", "Medium", "High", "Any"], index=3)
-    transport = st.text_input("Preferred Transport (e.g., Car, Train, Flight):")
-    family_friendly = st.radio("Family-Friendly:", ["Yes", "No", "Any"], index=2)
+if user_input:
+    st.session_state.conversation.append(f"You: {user_input}")
     
-    if st.button("Find Package"):
-        budget = None if budget == "Any" else budget
-        family_friendly = None if family_friendly == "Any" else family_friendly
+    # Simple intent recognition
+    if "package" in user_input.lower():
+        budget = None
+        transport = None
+        family_friendly = None
+        
+        # Extract budget, transport, and family-friendly info from user input
+        if "low" in user_input.lower():
+            budget = "Low"
+        elif "medium" in user_input.lower():
+            budget = "Medium"
+        elif "high" in user_input.lower():
+            budget = "High"
+        
+        if "car" in user_input.lower():
+            transport = "Car"
+        elif "train" in user_input.lower():
+            transport = "Train"
+        elif "flight" in user_input.lower():
+            transport = "Flight"
+        
+        if "family" in user_input.lower() and "friendly" in user_input.lower():
+            family_friendly = "Yes"
+        elif "not family" in user_input.lower():
+            family_friendly = "No"
+        
         result = get_best_match("travel package", budget, transport, family_friendly)
         
         if result is not None:
-            st.write(f"🎯 **Recommended Package:**\n"
-                     f"**State:** {result['State']}\n"
-                     f"**Weather:** {result['Weather']}\n"
-                     f"**Activities:** {result['Activities']}\n"
-                     f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
-                     f"**Budget Level:** {result['Budget Level']}\n"
-                     f"**Budget (INR):** {result['Budget (INR)']}\n"
-                     f"**Transportation Options:** {result['Transportation Options']}\n"
-                     f"**Family-Friendly:** {result['Family-Friendly']}")
+            response = (f"🎯 **Recommended Package:**\n"
+                        f"**State:** {result['State']}\n"
+                        f"**Weather:** {result['Weather']}\n"
+                        f"**Activities:** {result['Activities']}\n"
+                        f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
+                        f"**Budget Level:** {result['Budget Level']}\n"
+                        f"**Budget (INR):** {result['Budget (INR)']}\n"
+                        f"**Transportation Options:** {result['Transportation Options']}\n"
+                        f"**Family-Friendly:** {result['Family-Friendly']}")
         else:
-            st.write("🤖 Sorry, no relevant packages found.")
-
-elif option == "Locations":
-    locations = df["State"].unique()
-    st.write("📍 **Available Locations:** " + ", ".join(locations))
-
-elif option == "Best Places to Visit":
-    state = st.selectbox("Select a state:", df["State"].unique())
-    best_places = df[df["State"] == state]["Activities"].explode().dropna().unique()
-    if best_places.size > 0:
-        st.write(f"🌟 **Best Places to Visit in {state}:** " + ", ".join(best_places))
+            response = "🤖 Sorry, no relevant packages found."
+    
+    elif "locations" in user_input.lower():
+        locations = df["State"].unique()
+        response = "📍 **Available Locations:** " + ", ".join(locations)
+    
+    elif "best places" in user_input.lower():
+        state = user_input.split("in")[-1].strip() if "in" in user_input else None
+        if state and state in df["State"].values:
+            best_places = df[df["State"] == state]["Activities"].explode().dropna().unique()
+            if best_places.size > 0:
+                response = f"🌟 **Best Places to Visit in {state}:** " + ", ".join(best_places)
+            else:
+                response = f"🤖 No specific recommendations available for {state}."
+        else:
+            response = "🤖 Please specify a valid state."
+    
+    elif "weather" in user_input.lower():
+        weather_info = df.groupby("State")["Weather"].first().to_dict()
+        response = "\n".join([f"☁️ **{state}:** {weather}" for state, weather in weather_info.items()])
+    
+    elif "cuisine" in user_input.lower():
+        state = user_input.split("in")[-1].strip() if "in" in user_input else None
+        if state and state in df["State"].values:
+            cuisines = df[df["State"] == state]["Cuisines"].dropna().unique()
+            if cuisines.size > 0:
+                response = f"🍽️ **Famous Cuisines in {state}:** " + ", ".join(cuisines)
+            else:
+                response = f"🤖 No cuisine data available for {state}."
+        else:
+            response = "🤖 Please specify a valid state."
+    
+    elif "adventure" in user_input.lower():
+        activity = user_input.split("activity")[-1].strip() if "activity" in user_input else None
+        if activity:
+            states_with_activity = df[df["Activities"].str.contains(activity, case=False, na=False)]["State"].unique()
+            if states_with_activity.size > 0:
+                response = f"🎢 **States offering {activity}:** " + ", ".join(states_with_activity)
+            else:
+                response = f"🤖 No states found for {activity}."
+        else:
+            response = "🤖 Please specify an adventure activity."
+    
+    elif "festival" in user_input.lower():
+        state = user_input.split("in")[-1].strip() if "in" in user_input else None
+        if state and state in df["State"].values:
+            festivals = df[df["State"] == state]["Cultural Highlights"].dropna().unique()
+            if festivals.size > 0:
+                response = f"🎉 **Major Festivals in {state}:** " + ", ".join(festivals)
+            else:
+                response = f"🤖 No festival data available for {state}."
+        else:
+            response = "🤖 Please specify a valid state."
+    
     else:
-        st.write(f"🤖 No specific recommendations available for {state}.")
+        response = "🤖 I'm sorry, I didn't understand that. Can you ask something else?"
+    
+    st.session_state.conversation.append(f"Bot: {response}")
 
-elif option == "Weather Information":
-    weather_info = df.groupby("State")["Weather"].first().to_dict()
-    for state, weather in weather_info.items():
-        st.write(f"☁️ **{state}:** {weather}")
-
-elif option == "Local Cuisine":
-    state = st.selectbox("Select a state:", df["State"].unique())
-    cuisines = df[df["State"] == state]["Cuisines"].dropna().unique()
-    if cuisines.size > 0:
-        st.write(f"🍽️ **Famous Cuisines in {state}:** " + ", ".join(cuisines))
-    else:
-        st.write(f"🤖 No cuisine data available for {state}.")
-
-elif option == "Adventure Activities":
-    activity = st.text_input("Enter an adventure activity (e.g., Trekking, Rafting, Paragliding):")
-    states_with_activity = df[df["Activities"].str.contains(activity, case=False, na=False)]["State"].unique()
-    if states_with_activity.size > 0:
-        st.write(f"🎢 **States offering {activity}:** " + ", ".join(states_with_activity))
-    else:
-        st.write(f"🤖 No states found for {activity}.")
-
-elif option == "Festivals & Events":
-    state = st.selectbox("Select a state:", df["State"].unique())
-    festivals = df[df["State"] == state]["Cultural Highlights"].dropna().unique()
-    if festivals.size > 0:
-        st.write(f"🎉 **Major Festivals in {state}:** " + ", ".join(festivals))
-    else:
-        st.write(f"🤖 No festival data available for {state}.")
+# Display conversation
+for message in st.session_state.conversation:
+    st.write(message)
