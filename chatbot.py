@@ -53,51 +53,38 @@ st.write("Hello! I'm your travel assistant. How can I help you today?")
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
-user_input = st.text_input("You:")
+user_input = st.text_input("You:", "", key="user_input")
+
+def process_input(user_input):
+    if "package" in user_input.lower():
+        result = get_best_match(user_input)
+        if result is not None:
+            return (f"🎯 **Recommended Package:**\n"
+                    f"**State:** {result['State']}\n"
+                    f"**Weather:** {result['Weather']}\n"
+                    f"**Activities:** {result['Activities']}\n"
+                    f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
+                    f"**Budget Level:** {result['Budget Level']}\n"
+                    f"**Budget (INR):** {result['Budget (INR)']}\n"
+                    f"**Transportation Options:** {result['Transportation Options']}\n"
+                    f"**Family-Friendly:** {result['Family-Friendly']}")
+        else:
+            return "🤖 Sorry, no relevant packages found."
+    elif "location" in user_input.lower():
+        locations = df["State"].unique()
+        return "📍 **Available Locations:** " + ", ".join(locations)
+    elif "best place to visit" in user_input.lower():
+        best_places = df.sort_values(by="Budget (INR)", ascending=False)["State"].unique()[:5]
+        return "🌟 **Best Places to Visit:** " + ", ".join(best_places)
+    elif "weather" in user_input.lower():
+        weather_info = df.groupby("State")["Weather"].first().to_dict()
+        return "☁️ **Weather Information:**\n" + "\n".join([f"{state}: {weather}" for state, weather in weather_info.items()])
+    else:
+        return "🤖 I'm here to help! Ask me about travel packages, destinations, or activities."
 
 if user_input:
     st.session_state.conversation.append(f"You: {user_input}")
-    
-    if "package" in user_input.lower():
-        st.write("Let's find the perfect package for you! Answer a few questions:")
-        budget = st.selectbox("Select Budget Level", ["Any", "Low", "Medium", "High"])
-        transport = st.selectbox("Preferred Mode of Transport", ["Any", "Car", "Bus", "Train", "Flight"])
-        family_friendly = st.radio("Family-Friendly?", ["Any", "Yes", "No"])
-        
-        # Convert 'Any' to None
-        def convert_none(value):
-            return None if value == "Any" else value
-        
-        budget = convert_none(budget)
-        transport = convert_none(transport)
-        family_friendly = convert_none(family_friendly)
-        
-        result = get_best_match(user_input, budget, transport, family_friendly)
-        
-        if result is not None:
-            response = (f"🎯 Recommended Package:\n"
-                        f"**State:** {result['State']}\n"
-                        f"**Weather:** {result['Weather']}\n"
-                        f"**Activities:** {result['Activities']}\n"
-                        f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
-                        f"**Budget Level:** {result['Budget Level']}\n"
-                        f"**Budget (INR):** {result['Budget (INR)']}\n"
-                        f"**Transportation Options:** {result['Transportation Options']}\n"
-                        f"**Family-Friendly:** {result['Family-Friendly']}")
-        else:
-            response = "🤖 Sorry, no relevant packages found."
-    elif "location" in user_input.lower():
-        locations = df["State"].unique()
-        response = "Here are the locations available in my database: " + ", ".join(locations)
-    elif "best place to visit" in user_input.lower():
-        best_places = df.sort_values(by="Budget (INR)", ascending=False)["State"].unique()[:5]
-        response = "Here are some of the best places to visit: " + ", ".join(best_places)
-    elif "weather" in user_input.lower():
-        weather_info = df.groupby("State")["Weather"].first().to_dict()
-        response = "Weather information:\n" + "\n".join([f"{state}: {weather}" for state, weather in weather_info.items()])
-    else:
-        response = "I'm here to help! Ask me about travel packages, destinations, or activities."
-    
+    response = process_input(user_input)
     st.session_state.conversation.append(f"Bot: {response}")
 
 # Display conversation history
