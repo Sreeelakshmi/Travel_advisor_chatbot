@@ -86,6 +86,15 @@ if user_input:
                         f"**Family-Friendly:** {result['Family-Friendly']}")
         else:
             response = "🤖 Sorry, no relevant packages found."
+    elif "location" in user_input.lower():
+        locations = df["State"].unique()
+        response = "Here are the locations available in my database: " + ", ".join(locations)
+    elif "best place to visit" in user_input.lower():
+        best_places = df.sort_values(by="Budget (INR)", ascending=False)["State"].unique()[:5]
+        response = "Here are some of the best places to visit: " + ", ".join(best_places)
+    elif "weather" in user_input.lower():
+        weather_info = df.groupby("State")["Weather"].first().to_dict()
+        response = "Weather information:\n" + "\n".join([f"{state}: {weather}" for state, weather in weather_info.items()])
     else:
         response = "I'm here to help! Ask me about travel packages, destinations, or activities."
     
