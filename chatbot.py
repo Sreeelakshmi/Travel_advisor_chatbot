@@ -11,7 +11,12 @@ nltk.download("punkt")
 df = pd.read_csv("Seven_Sisters_Travel_Packages.csv")
 
 # Preprocess travel packages
-df["Processed"] = df["State"].fillna("") + " " + df["Weather"].fillna("") + " " + df["Activities"].fillna("") + " " + df["Cultural Highlights"].fillna("")
+df["Processed"] = (
+    df["State"].fillna("") + " " +
+    df["Weather"].fillna("") + " " +
+    df["Activities"].fillna("") + " " +
+    df["Cultural Highlights"].fillna("")
+)
 
 # Train a TF-IDF model
 vectorizer = TfidfVectorizer()
@@ -29,15 +34,15 @@ def get_best_match(query):
         return None
 
 # Streamlit UI
-st.title("🌍 Northeast India Travel Guide Chatbot")
-st.write("Explore the best travel options across the Seven Sisters states!")
+st.title("🌍 Explore Northeast India: Travel Chatbot")
+st.write("Discover the best travel experiences in the Seven Sisters of India!")
 
 # Quick question buttons
 st.subheader("Quick Questions:")
 col1, col2, col3 = st.columns(3)
-if col1.button("Best adventure spots?"):
+if col1.button("Best package for adventure?"):
     query = "adventure"
-elif col2.button("Budget-friendly trips?"):
+elif col2.button("Budget-friendly tours?"):
     query = "budget"
 elif col3.button("Cultural experiences?"):
     query = "culture"
@@ -48,7 +53,7 @@ if query:
     result = get_best_match(query)
     
     if result is not None:
-        st.subheader("🎯 Recommended Travel Destination")
+        st.subheader("🎯 Recommended Package")
         st.write(f"**State:** {result['State']}")
         st.write(f"**Weather:** {result['Weather']}")
         st.write(f"**Activities:** {result['Activities']}")
@@ -56,8 +61,5 @@ if query:
         st.write(f"**Budget Level:** {result['Budget Level']}")
         st.write(f"**Budget (INR):** {result['Budget (INR)']}")
         
-        # Show image if available
-        if 'Image_URL' in result and pd.notna(result['Image_URL']):
-            st.image(result['Image_URL'], caption=result['State'], use_column_width=True)
     else:
-        st.write("🤖 Sorry, no relevant travel options found.")
+        st.write("🤖 Sorry, no relevant packages found.")
