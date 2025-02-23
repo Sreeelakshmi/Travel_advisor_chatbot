@@ -93,4 +93,4 @@ if user_input:
     st.session_state.conversation.append(f"Bot: {response}")
     
     # Clear input field after response
-    st.experimental_rerun()
+    st.rerun()
