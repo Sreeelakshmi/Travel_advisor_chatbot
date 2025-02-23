@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 nltk.download("punkt")
 
 # Load dataset
-file_path = "/mnt/data/Seven_Sisters_Travel_Packages.csv"
+file_path = "Seven_Sisters_Travel_Packages.csv"
 df = pd.read_csv(file_path)
 
 # Check required columns
