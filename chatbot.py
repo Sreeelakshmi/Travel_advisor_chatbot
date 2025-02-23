@@ -1,85 +1,56 @@
 import streamlit as st
 import pandas as pd
-import nltk
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
-nltk.download("punkt")
-
+# Load dataset
 df = pd.read_csv("Seven_Sisters_Travel_Packages.csv")
 
-df["Processed"] = (
-    df["State"].fillna("") + " " +
-    df["Weather"].fillna("") + " " +
-    df["Activities"].fillna("") + " " +
-    df["Cultural Highlights"].fillna("")
-)
-
-vectorizer = TfidfVectorizer()
-tfidf_matrix = vectorizer.fit_transform(df["Processed"])
-
-def get_best_match(query, budget=None, transport=None, family_friendly=None):
-    query_vec = vectorizer.transform([query])
-    similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
-    best_index = similarities.argmax()
-    best_match = df.iloc[best_index]
-    return best_match
-
+# Dictionary containing travel information
 seven_sisters_info = {
     "Arunachal Pradesh": {
+        "History": "Arunachal Pradesh has a long history of tribal heritage, influenced by Tibetan Buddhism and indigenous traditions. It was part of Assam during British rule and later became a state in 1987.",
         "Best Places": "Tawang, Ziro Valley, Namdapha National Park, Dirang",
         "Best Time": "October to April",
-        "Cuisines": "Thukpa, Momos, Bamboo Shoot Dishes, Pika Pila",
-        "Culture": "Tribal culture with over 26 major tribes, rich traditions, and vibrant festivals like Losar and Nyokum",
-        "Nearby Attractions": "Bomdila, Sela Pass, Itanagar",
-        "History": "Arunachal Pradesh has a long history of tribal heritage, influenced by Tibetan Buddhism and indigenous traditions. It was part of the Assam region during British rule and later became a union territory before achieving statehood in 1987."
+        "Food": "Thukpa, Momos, Bamboo Shoot Dishes, Pika Pila",
+        "Culture": "Tribal culture with over 26 major tribes, vibrant festivals like Losar and Nyokum",
+        "Travel Options": "Flights to Itanagar, road travel from Assam"
     },
     "Assam": {
+        "History": "Assam has a rich history, with the Ahom dynasty ruling for over 600 years. It has seen influences from the Mauryan empire to British colonization, shaping its diverse culture.",
         "Best Places": "Kaziranga National Park, Majuli, Sivasagar, Kamakhya Temple",
         "Best Time": "November to April",
-        "Cuisines": "Masor Tenga, Assam Laksa, Pithas, Duck Meat Curry",
+        "Food": "Masor Tenga, Assam Laksa, Pithas, Duck Meat Curry",
         "Culture": "Blend of Assamese, Bodo, and other indigenous cultures, Bihu festival, Satriya dance",
-        "Nearby Attractions": "Hajo, Manas National Park, Tezpur",
-        "History": "Assam has a rich historical background, with the Ahom dynasty ruling for over 600 years. The region has seen various influences, from the Mauryan empire to British colonization, shaping its diverse culture and traditions."
+        "Travel Options": "Flights to Guwahati, trains, and road travel"
     }
 }
 
-def get_state_info(state):
-    state = state.strip().title()
-    greetings = ["hi", "hello", "hey", "greetings"]
-    if state.lower() in greetings:
-        return "Hello! How can I assist you with your travel plans?"
-    for key in seven_sisters_info.keys():
-        if state.lower() in key.lower():
-            info = seven_sisters_info[key]
-            return (f"🏔️ **{key} Travel Guide**\n"
-                    f"- **Best Places to Visit:** {info['Best Places']}\n"
-                    f"- **Best Time to Visit:** {info['Best Time']}\n"
-                    f"- **Local Cuisines:** {info['Cuisines']}\n"
-                    f"- **Culture:** {info['Culture']}\n"
-                    f"- **Nearby Attractions:** {info['Nearby Attractions']}\n"
-                    f"- **History:** {info['History']}")
-    return "Sorry, I don't have detailed information on that location. Please try specifying a well-known place."
-
 st.set_page_config(page_title="Seven Sisters Travel Guide", layout="wide")
-st.sidebar.title("🔍 Travel Search")
-budget = st.sidebar.selectbox("Select Budget:", ["Any", "Low", "Medium", "High"])
-transport = st.sidebar.selectbox("Preferred Transport:", ["Any", "Bus", "Train", "Flight"])
-family_friendly = st.sidebar.checkbox("Family-Friendly")
-
 st.title("🌍 Explore Northeast India: Travel Chatbot")
-st.write("Hello! I'm your travel assistant. How can I help you today? Type your query below.")
 
+# Initialize session state if not already present
+if "state_selected" not in st.session_state:
+    st.session_state.state_selected = None
+if "info_selected" not in st.session_state:
+    st.session_state.info_selected = None
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
-query = st.text_input("Enter your query:", key="query_input")
+# Greet user
+query = st.text_input("Say hi to begin!", key="query_input")
 send = st.button("Send")
 
-if send and query:
-    st.session_state.conversation.append(f"🧑‍💻 You: {query}")
-    response = get_state_info(query)
-    st.session_state.conversation.append(f"🤖 Bot: {response}")
+if send and query.lower() in ["hi", "hello", "hey"]:
+    st.session_state.conversation.append("🤖 Bot: Hello! Which of the Seven Sisters are you planning to visit?")
+    st.session_state.state_selected = st.selectbox("Choose a state:", list(seven_sisters_info.keys()), key="state_select")
+
+if st.session_state.state_selected:
+    st.session_state.conversation.append(f"🧑‍💻 You: {st.session_state.state_selected}")
+    st.session_state.conversation.append("🤖 Bot: What would you like to know about this state?")
+    st.session_state.info_selected = st.selectbox("Choose a topic:", ["History", "Best Places", "Best Time", "Food", "Culture", "Travel Options", "Exit"], key="info_select")
+
+if st.session_state.info_selected and st.session_state.info_selected != "Exit":
+    info = seven_sisters_info[st.session_state.state_selected].get(st.session_state.info_selected, "Information not available.")
+    st.session_state.conversation.append(f"🤖 Bot: {info}")
 
 for message in st.session_state.conversation:
     st.write(message)
