@@ -52,6 +52,8 @@ st.write("Hello! I'm your travel assistant. How can I help you today?")
 # Chatbot-style interaction
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
 
 def process_input(user_input):
     if "package" in user_input.lower():
@@ -85,12 +87,13 @@ for message in st.session_state.conversation:
     st.write(message)
 
 # User input field
-user_input = st.text_input("You:", "", key="user_input")
-
-if user_input:
-    st.session_state.conversation.append(f"You: {user_input}")
-    response = process_input(user_input)
-    st.session_state.conversation.append(f"Bot: {response}")
-    
-    # Clear input field after response
-    st.rerun()
+user_input = st.text_input("You:", value=st.session_state.user_input, key="user_input_field")
+if st.button("Send"):
+    if user_input.strip():
+        st.session_state.conversation.append(f"You: {user_input}")
+        response = process_input(user_input)
+        st.session_state.conversation.append(f"Bot: {response}")
+        
+        # Clear user input field
+        st.session_state.user_input = ""
+        st.rerun()
