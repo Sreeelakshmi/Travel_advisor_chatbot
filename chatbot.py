@@ -7,13 +7,18 @@ data_path = '/mnt/data/Seven_Sisters_Travel_Packages.csv'
 df = pd.read_csv(data_path)
 
 # Configure Gemini API
-genai.configure(api_key="AIzaSyDNwIxW9HofySRWVYeAjkXTA5by_5LF-j0")
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
 
-def fetch_package_info(state):
-    """Fetches travel package details for a given state."""
+def fetch_package_info(state, family_friendly=None, budget=None):
+    """Fetches travel package details for a given state with optional filters."""
     packages = df[df['State'].str.lower() == state.lower()]
+    if family_friendly is not None:
+        packages = packages[packages['Family_Friendly'] == family_friendly]
+    if budget is not None:
+        packages = packages[packages['Budget'] <= budget]
+    
     if packages.empty:
-        return "No travel packages available for this state."
+        return "No travel packages available for this selection."
     return packages.to_string(index=False)
 
 def fetch_general_info(state):
@@ -64,3 +69,16 @@ st.sidebar.info("The Seven Sisters of India are Arunachal Pradesh, Assam, Manipu
 
 st.sidebar.title("📌 How to Use")
 st.sidebar.write("1. Type your question in the chat input below.\n2. Get detailed travel insights and available packages.\n3. Explore the sidebar for more details about the region.")
+
+# Sidebar for Travel Packages
+st.sidebar.title("🏝️ Travel Packages")
+st.sidebar.write("Select a state to see available travel packages.")
+selected_state = st.sidebar.selectbox("Choose a State", df['State'].unique())
+
+# Filters for travel packages
+family_friendly = st.sidebar.checkbox("Family Friendly")
+budget = st.sidebar.slider("Budget (INR)", min_value=int(df['Budget'].min()), max_value=int(df['Budget'].max()), value=int(df['Budget'].max()))
+
+if selected_state:
+    sidebar_package_info = fetch_package_info(selected_state, family_friendly=family_friendly, budget=budget)
+    st.sidebar.text_area("Available Packages", sidebar_package_info, height=200)
