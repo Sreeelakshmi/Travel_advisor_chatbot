@@ -27,12 +27,18 @@ def fetch_package_info(state, family_friendly=None, budget=None):
     return packages.to_string(index=False)
 
 def fetch_general_info(state):
-    """Uses Gemini API to fetch general information about a state with a diverse keyword search."""
+    """Fetches general travel information using Gemini API."""
     keywords = ["tourism", "culture", "history", "best places to visit", "food", "festivals", "geography", "climate", "local traditions", "wildlife", "heritage sites", "transportation options", "adventure activities", "shopping", "accommodation"]
     keyword_prompt = ', '.join(keywords)
     prompt = f"Provide a comprehensive travel guide about {state}, one of the Seven Sisters of India. Cover aspects such as {keyword_prompt}."
-    response = genai.generate_text(prompt)
-    return response.text if response else "No information found."
+
+    try:
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(prompt)
+        return response.candidates[0].text if response and response.candidates else "No information found."
+    except Exception as e:
+        return f"Error fetching information: {e}"
+
 
 def chatbot_response(user_input):
     """Processes user input to determine the response."""
