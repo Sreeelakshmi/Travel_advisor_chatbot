@@ -1,102 +1,108 @@
-import streamlit as st
 import pandas as pd
+import google.generativeai as genai
+import streamlit as st
 
-# Load dataset
-df = pd.read_csv("Seven_Sisters_Travel_Packages.csv")
+# Load travel package data
+data_path = 'Seven_Sisters_Travel_Packages.csv'
+df = pd.read_csv(data_path)
 
-# Dictionary containing travel information
-seven_sisters_info = {
-    "Arunachal Pradesh": {
-        "History": "Arunachal Pradesh has a long history of tribal heritage, influenced by Tibetan Buddhism and indigenous traditions. It was part of Assam during British rule and later became a state in 1987.",
-        "Best Places": "Tawang, Ziro Valley, Namdapha National Park, Dirang",
-        "Best Time": "October to April",
-        "Food": "Thukpa, Momos, Bamboo Shoot Dishes, Pika Pila",
-        "Culture": "Tribal culture with over 26 major tribes, vibrant festivals like Losar and Nyokum",
-        "Travel Options": "Flights to Itanagar, road travel from Assam"
-    },
-    "Assam": {
-        "History": "Assam has a rich history, with the Ahom dynasty ruling for over 600 years. It has seen influences from the Mauryan empire to British colonization, shaping its diverse culture.",
-        "Best Places": "Kaziranga National Park, Majuli, Sivasagar, Kamakhya Temple",
-        "Best Time": "November to April",
-        "Food": "Masor Tenga, Assam Laksa, Pithas, Duck Meat Curry",
-        "Culture": "Blend of Assamese, Bodo, and other indigenous cultures, Bihu festival, Satriya dance",
-        "Travel Options": "Flights to Guwahati, trains, and road travel"
-    },
-    "Manipur": {
-        "History": "Manipur has a deep historical significance, once ruled by the Meitei kingdom and later integrated into India in 1949.",
-        "Best Places": "Loktak Lake, Kangla Fort, Keibul Lamjao National Park",
-        "Best Time": "October to March",
-        "Food": "Eromba, Singju, Chak-hao Kheer",
-        "Culture": "Rich cultural heritage, classical Manipuri dance, Lai Haraoba festival",
-        "Travel Options": "Flights to Imphal, road travel from Nagaland and Assam"
-    },
-    "Meghalaya": {
-        "History": "Meghalaya was carved out of Assam in 1972 and is known for its matrilineal society and indigenous Khasi, Jaintia, and Garo tribes.",
-        "Best Places": "Cherrapunji, Shillong, Dawki, Living Root Bridges",
-        "Best Time": "October to June",
-        "Food": "Jadoh, Dohneiiong, Bamboo Shoots",
-        "Culture": "Khasi, Jaintia, and Garo cultures, Wangala festival, Nongkrem dance",
-        "Travel Options": "Flights to Shillong, road travel from Guwahati"
-    },
-    "Mizoram": {
-        "History": "Mizoram was initially part of Assam and became a separate state in 1987, home to the Mizo people.",
-        "Best Places": "Aizawl, Phawngpui National Park, Vantawng Falls",
-        "Best Time": "November to March",
-        "Food": "Bai, Misa Mach Poora, Bamboo Shoot dishes",
-        "Culture": "Mizo traditions, Chapchar Kut festival, rich folk music",
-        "Travel Options": "Flights to Aizawl, road travel from Assam"
-    },
-    "Nagaland": {
-        "History": "Nagaland became a state in 1963, home to various Naga tribes with a history of resilience and traditions.",
-        "Best Places": "Kohima, Dzukou Valley, Hornbill Festival",
-        "Best Time": "October to May",
-        "Food": "Smoked Pork, Bamboo Shoots, Akhuni",
-        "Culture": "Naga tribal heritage, Hornbill Festival, vibrant traditional attire",
-        "Travel Options": "Flights to Dimapur, road travel from Assam"
-    },
-    "Tripura": {
-        "History": "Tripura has a mix of Bengali and indigenous cultures, ruled by the Manikya dynasty before merging with India in 1949.",
-        "Best Places": "Ujjayanta Palace, Neermahal, Jampui Hills",
-        "Best Time": "September to March",
-        "Food": "Mui Borok, Fish stews, Mosdeng Serma",
-        "Culture": "Blend of Tripuri and Bengali cultures, Garia Puja, Kharchi festival",
-        "Travel Options": "Flights to Agartala, road travel from Assam"
-    }
-}
+# Configure Gemini API
+genai.configure(api_key="AIzaSyDNwIxW9HofySRWVYeAjkXTA5by_5LF-j0")
 
-st.set_page_config(page_title="Seven Sisters Travel Guide", layout="wide")
-st.title("🌍 Explore Northeast India: Travel Chatbot")
+def fetch_package_info(state, family_friendly=None, budget=None):
+    """Fetches travel package details for a given state with optional filters."""
+    packages = df[df['State'].str.lower() == state.lower()]
 
-# Sidebar filters
-st.sidebar.header("Filter Travel Packages")
-budget = st.sidebar.slider("Select Budget Range:", 1000, 50000, (5000, 20000))
-transport = st.sidebar.selectbox("Preferred Mode of Transport", ["Any", "Flight", "Train", "Road"])
-family_friendly = st.sidebar.checkbox("Family-Friendly Packages")
+    # Check if "Family_Friendly" column exists before filtering
+    if 'Family_Friendly' in df.columns and family_friendly is not None:
+        packages = packages[packages['Family_Friendly'].str.lower() == "yes"] if family_friendly else packages
 
-# Initialize session state
-if "state_selected" not in st.session_state:
-    st.session_state.state_selected = None
-if "info_selected" not in st.session_state:
-    st.session_state.info_selected = None
-if "conversation" not in st.session_state:
-    st.session_state.conversation = []
+    # Check if "Budget(INR)" column exists before filtering
+    if budget is not None and 'Budget(INR)' in df.columns:
+        packages = packages[pd.to_numeric(packages['Budget(INR)'], errors='coerce') <= budget]
 
-# Chatbot flow
-query = st.text_input("Say hi to begin!", key="query_input")
-send = st.button("Send")
+    if packages.empty:
+        return "No travel packages available for this selection."
+    
+    return packages.to_string(index=False)
 
-if send and query.lower() in ["hi", "hello", "hey"]:
-    st.session_state.conversation.append("🤖 Bot: Hello! Which of the Seven Sisters are you planning to visit?")
-    st.session_state.state_selected = st.selectbox("Choose a state:", list(seven_sisters_info.keys()), key="state_select")
+def fetch_general_info(state):
+    """Fetches general travel information using Gemini API."""
+    keywords = ["tourism", "culture", "history", "best places to visit", "food", "festivals", "geography", "climate", "local traditions", "wildlife", "heritage sites", "transportation options", "adventure activities", "shopping", "accommodation"]
+    keyword_prompt = ', '.join(keywords)
+    prompt = f"Provide a comprehensive travel guide about {state}, one of the Seven Sisters of India. Cover aspects such as {keyword_prompt}."
 
-if st.session_state.state_selected:
-    st.session_state.conversation.append(f"🧑‍💻 You: {st.session_state.state_selected}")
-    st.session_state.conversation.append("🤖 Bot: What would you like to know about this state?")
-    st.session_state.info_selected = st.selectbox("Choose a topic:", ["History", "Best Places", "Best Time", "Food", "Culture", "Travel Options", "Exit"], key="info_select")
+    try:
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(prompt)
+        return response.candidates[0].text if response and response.candidates else "No information found."
+    except Exception as e:
+        return f"Error fetching information: {e}"
 
-if st.session_state.info_selected and st.session_state.info_selected != "Exit":
-    info = seven_sisters_info[st.session_state.state_selected].get(st.session_state.info_selected, "Detailed information is not available. Try another topic.")
-    st.session_state.conversation.append(f"🤖 Bot: {info}")
 
-for message in st.session_state.conversation:
-    st.write(message)
+def chatbot_response(user_input):
+    """Processes user input to determine the response."""
+    words = user_input.lower().split()
+    for state in df['State'].unique():
+        if state.lower() in words:
+            package_info = fetch_package_info(state)
+            general_info = fetch_general_info(state)
+            return f"{general_info}\n\n### 📦 Travel Packages:\n{package_info}"
+    return "Please specify a state from the Seven Sisters of India."
+
+# Streamlit UI
+st.set_page_config(page_title="Seven Sisters Travel Chatbot", page_icon="🌍", layout="wide")
+st.title("🌏 Seven Sisters Travel Chatbot")
+st.markdown("Welcome to the **Seven Sisters Travel Chatbot**! Ask me about any of the Seven Sisters states, and I'll provide travel insights along with package details.")
+
+# Chat Interface
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+for message in st.session_state["messages"]:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+user_input = st.chat_input("Ask me about any state from the Seven Sisters!")
+if user_input:
+    st.session_state["messages"].append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+    
+    response = chatbot_response(user_input)
+    st.session_state["messages"].append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+        st.markdown(response)
+
+# Sidebar for additional information
+st.sidebar.title("🗺️ About the Seven Sisters")
+st.sidebar.info("The Seven Sisters of India are Arunachal Pradesh, Assam, Manipur, Meghalaya, Mizoram, Nagaland, and Tripura. Each state has its own unique culture, traditions, and breathtaking landscapes.")
+
+st.sidebar.title("📌 How to Use")
+st.sidebar.write("1. Type your question in the chat input below.\n2. Get detailed travel insights and available packages.\n3. Explore the sidebar for more details about the region.")
+
+# Ensure correct column name
+budget_col = 'Budget(INR)'
+
+# Sidebar for Travel Packages
+st.sidebar.title("🏝️ Travel Packages")
+st.sidebar.write("Select a state to see available travel packages.")
+selected_state = st.sidebar.selectbox("Choose a State", df['State'].unique())
+
+# Filters for travel packages
+family_friendly = st.sidebar.checkbox("Family Friendly")
+
+# Ensure the column exists and is numeric
+if budget_col in df.columns:
+    df[budget_col] = pd.to_numeric(df[budget_col], errors='coerce')
+    df.dropna(subset=[budget_col], inplace=True)
+    min_budget = int(df[budget_col].min())
+    max_budget = int(df[budget_col].max())
+else:
+    min_budget, max_budget = 5000, 50000  # Default values
+
+budget = st.sidebar.slider("Budget (INR)", min_value=min_budget, max_value=max_budget, value=max_budget)
+
+if selected_state:
+    sidebar_package_info = fetch_package_info(selected_state, family_friendly=family_friendly, budget=budget)
+    st.sidebar.text_area("Available Packages", sidebar_package_info, height=200)
