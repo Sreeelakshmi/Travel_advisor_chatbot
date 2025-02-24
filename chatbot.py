@@ -1,103 +1,122 @@
-import pandas as pd
-import google.generativeai as genai
 import streamlit as st
+import pandas as pd
+import nltk
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Dictionary containing travel information
-seven_sisters_info = {
-    "Arunachal Pradesh": {
-        "History": "Arunachal Pradesh has a long history of tribal heritage, influenced by Tibetan Buddhism and indigenous traditions. It was part of Assam during British rule and later became a state in 1987.",
-        "Best Places": "Tawang, Ziro Valley, Namdapha National Park, Dirang",
-        "Best Time": "October to April",
-        "Food": "Thukpa, Momos, Bamboo Shoot Dishes, Pika Pila",
-        "Culture": "Tribal culture with over 26 major tribes, vibrant festivals like Losar and Nyokum",
-        "Travel Options": "Flights to Itanagar, road travel from Assam"
-    },
-    "Assam": {
-        "History": "Assam has a rich history, with the Ahom dynasty ruling for over 600 years. It has seen influences from the Mauryan empire to British colonization, shaping its diverse culture.",
-        "Best Places": "Kaziranga National Park, Majuli, Sivasagar, Kamakhya Temple",
-        "Best Time": "November to April",
-        "Food": "Masor Tenga, Assam Laksa, Pithas, Duck Meat Curry",
-        "Culture": "Blend of Assamese, Bodo, and other indigenous cultures, Bihu festival, Satriya dance",
-        "Travel Options": "Flights to Guwahati, trains, and road travel"
-    },
-    "Manipur": {
-        "History": "Manipur has a deep historical significance, once ruled by the Meitei kingdom and later integrated into India in 1949.",
-        "Best Places": "Loktak Lake, Kangla Fort, Keibul Lamjao National Park",
-        "Best Time": "October to March",
-        "Food": "Eromba, Singju, Chak-hao Kheer",
-        "Culture": "Rich cultural heritage, classical Manipuri dance, Lai Haraoba festival",
-        "Travel Options": "Flights to Imphal, road travel from Nagaland and Assam"
-    },
-    "Meghalaya": {
-        "History": "Meghalaya was carved out of Assam in 1972 and is known for its matrilineal society and indigenous Khasi, Jaintia, and Garo tribes.",
-        "Best Places": "Cherrapunji, Shillong, Dawki, Living Root Bridges",
-        "Best Time": "October to June",
-        "Food": "Jadoh, Dohneiiong, Bamboo Shoots",
-        "Culture": "Khasi, Jaintia, and Garo cultures, Wangala festival, Nongkrem dance",
-        "Travel Options": "Flights to Shillong, road travel from Guwahati"
-    },
-    "Mizoram": {
-        "History": "Mizoram was initially part of Assam and became a separate state in 1987, home to the Mizo people.",
-        "Best Places": "Aizawl, Phawngpui National Park, Vantawng Falls",
-        "Best Time": "November to March",
-        "Food": "Bai, Misa Mach Poora, Bamboo Shoot dishes",
-        "Culture": "Mizo traditions, Chapchar Kut festival, rich folk music",
-        "Travel Options": "Flights to Aizawl, road travel from Assam"
-    },
-    "Nagaland": {
-        "History": "Nagaland became a state in 1963, home to various Naga tribes with a history of resilience and traditions.",
-        "Best Places": "Kohima, Dzukou Valley, Hornbill Festival",
-        "Best Time": "October to May",
-        "Food": "Smoked Pork, Bamboo Shoots, Akhuni",
-        "Culture": "Naga tribal heritage, Hornbill Festival, vibrant traditional attire",
-        "Travel Options": "Flights to Dimapur, road travel from Assam"
-    },
-    "Tripura": {
-        "History": "Tripura has a mix of Bengali and indigenous cultures, ruled by the Manikya dynasty before merging with India in 1949.",
-        "Best Places": "Ujjayanta Palace, Neermahal, Jampui Hills",
-        "Best Time": "September to March",
-        "Food": "Mui Borok, Fish stews, Mosdeng Serma",
-        "Culture": "Blend of Tripuri and Bengali cultures, Garia Puja, Kharchi festival",
-        "Travel Options": "Flights to Agartala, road travel from Assam"
-    }
-}
+# Download nltk data
+nltk.download("punkt")
 
-# Load travel package data
-data_path = 'Seven_Sisters_Travel_Packages.csv'
-df = pd.read_csv(data_path)
+# Load dataset
+df = pd.read_csv("Seven_Sisters_Travel_Packages.csv")
 
-# Configure Gemini API
-genai.configure(api_key="YOUR_API_KEY")
+# Preprocess travel packages
+df["Processed"] = (
+    df["State"].fillna("") + " " +
+    df["Weather"].fillna("") + " " +
+    df["Activities"].fillna("") + " " +
+    df["Cultural Highlights"].fillna("")
+)
 
-def fetch_package_info(state, family_friendly=None, budget=None):
-    """Fetches best two travel package options based on user preferences."""
-    packages = df[df['State'].str.lower() == state.lower()]
+# Train a TF-IDF model
+vectorizer = TfidfVectorizer()
+tfidf_matrix = vectorizer.fit_transform(df["Processed"])
 
-    if family_friendly is not None:
-        packages = packages[packages['Family_Friendly'].str.lower() == "yes"] if family_friendly else packages
-
-    if budget is not None:
-        packages = packages[pd.to_numeric(packages['Budget(INR)'], errors='coerce') <= budget]
+def get_best_match(query, budget=None, transport=None, family_friendly=None):
+    """Find the best travel package based on user query and filters."""
+    filtered_df = df.copy()
     
-    return packages.head(2).to_string(index=False) if not packages.empty else "No suitable travel packages available."
-
-def fetch_general_info(state):
-    """Fetches general travel information from the dictionary."""
-    return seven_sisters_info.get(state, "No information available for this state.")
-
-def chatbot_response(user_input):
-    """Processes user input to determine the response."""
-    words = user_input.lower().split()
-    for state in seven_sisters_info.keys():
-        if state.lower() in words:
-            return f"### 🌍 Travel Guide for {state}\n\n" + "\n".join([f"**{key}:** {value}" for key, value in seven_sisters_info[state].items()])
-    return "Please specify a state from the Seven Sisters of India."
+    if budget:
+        filtered_df = filtered_df[filtered_df["Budget Level"].str.lower() == budget.lower()]
+    if transport:
+        filtered_df = filtered_df[filtered_df["Transportation Options"].str.contains(transport, case=False, na=False)]
+    if family_friendly:
+        filtered_df = filtered_df[filtered_df["Family-Friendly"].str.lower() == family_friendly.lower()]
+    
+    if filtered_df.empty:
+        return None
+    
+    query_vec = vectorizer.transform([query])
+    similarities = cosine_similarity(query_vec, vectorizer.transform(filtered_df["Processed"])).flatten()
+    
+    best_index = similarities.argmax()
+    if similarities[best_index] > 0.1:
+        return filtered_df.iloc[best_index]
+    else:
+        return None
 
 # Streamlit UI
-st.set_page_config(page_title="Seven Sisters Travel Chatbot", page_icon="🌍", layout="wide")
-st.title("🌏 Seven Sisters Travel Chatbot")
+st.title("🌍 Explore Northeast India: Travel Chatbot")
+st.write("Hello! I'm your travel assistant. How can I help you today?")
 
-user_input = st.text_input("Ask me about any state from the Seven Sisters!")
-if user_input:
-    response = chatbot_response(user_input)
-    st.markdown(response)
+# Chatbot-style interaction
+if "conversation" not in st.session_state:
+    st.session_state.conversation = []
+
+st.write("### Choose a topic to explore:")
+option = st.radio("Select an option:", ["Travel Packages", "Locations", "Best Places to Visit", "Weather Information", "Local Cuisine", "Adventure Activities", "Festivals & Events"])
+
+if option == "Travel Packages":
+    st.write("🛫 Do you have any preferences?")
+    budget = st.selectbox("Budget Level:", ["Low", "Medium", "High", "Any"], index=3)
+    transport = st.text_input("Preferred Transport (e.g., Car, Train, Flight):")
+    family_friendly = st.radio("Family-Friendly:", ["Yes", "No", "Any"], index=2)
+    
+    if st.button("Find Package"):
+        budget = None if budget == "Any" else budget
+        family_friendly = None if family_friendly == "Any" else family_friendly
+        result = get_best_match("travel package", budget, transport, family_friendly)
+        
+        if result is not None:
+            st.write(f"🎯 **Recommended Package:**\n"
+                     f"**State:** {result['State']}\n"
+                     f"**Weather:** {result['Weather']}\n"
+                     f"**Activities:** {result['Activities']}\n"
+                     f"**Cultural Highlights:** {result['Cultural Highlights']}\n"
+                     f"**Budget Level:** {result['Budget Level']}\n"
+                     f"**Budget (INR):** {result['Budget (INR)']}\n"
+                     f"**Transportation Options:** {result['Transportation Options']}\n"
+                     f"**Family-Friendly:** {result['Family-Friendly']}")
+        else:
+            st.write("🤖 Sorry, no relevant packages found.")
+
+elif option == "Locations":
+    locations = df["State"].unique()
+    st.write("📍 **Available Locations:** " + ", ".join(locations))
+
+elif option == "Best Places to Visit":
+    state = st.selectbox("Select a state:", df["State"].unique())
+    best_places = df[df["State"] == state]["Activities"].explode().dropna().unique()
+    if best_places.size > 0:
+        st.write(f"🌟 **Best Places to Visit in {state}:** " + ", ".join(best_places))
+    else:
+        st.write(f"🤖 No specific recommendations available for {state}.")
+
+elif option == "Weather Information":
+    weather_info = df.groupby("State")["Weather"].first().to_dict()
+    for state, weather in weather_info.items():
+        st.write(f"☁️ **{state}:** {weather}")
+
+elif option == "Local Cuisine":
+    state = st.selectbox("Select a state:", df["State"].unique())
+    cuisines = df[df["State"] == state]["Cuisines"].dropna().unique()
+    if cuisines.size > 0:
+        st.write(f"🍽️ **Famous Cuisines in {state}:** " + ", ".join(cuisines))
+    else:
+        st.write(f"🤖 No cuisine data available for {state}.")
+
+elif option == "Adventure Activities":
+    activity = st.text_input("Enter an adventure activity (e.g., Trekking, Rafting, Paragliding):")
+    states_with_activity = df[df["Activities"].str.contains(activity, case=False, na=False)]["State"].unique()
+    if states_with_activity.size > 0:
+        st.write(f"🎢 **States offering {activity}:** " + ", ".join(states_with_activity))
+    else:
+        st.write(f"🤖 No states found for {activity}.")
+
+elif option == "Festivals & Events":
+    state = st.selectbox("Select a state:", df["State"].unique())
+    festivals = df[df["State"] == state]["Cultural Highlights"].dropna().unique()
+    if festivals.size > 0:
+        st.write(f"🎉 **Major Festivals in {state}:** " + ", ".join(festivals))
+    else:
+        st.write(f"🤖 No festival data available for {state}.")
