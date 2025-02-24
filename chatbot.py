@@ -7,7 +7,7 @@ data_path = '/mnt/data/Seven_Sisters_Travel_Packages.csv'
 df = pd.read_csv(data_path)
 
 # Configure Gemini API
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+genai.configure(api_key="AIzaSyDNwIxW9HofySRWVYeAjkXTA5by_5LF-j0")
 
 def fetch_package_info(state):
     """Fetches travel package details for a given state."""
