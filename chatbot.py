@@ -12,13 +12,18 @@ genai.configure(api_key="AIzaSyDNwIxW9HofySRWVYeAjkXTA5by_5LF-j0")
 def fetch_package_info(state, family_friendly=None, budget=None):
     """Fetches travel package details for a given state with optional filters."""
     packages = df[df['State'].str.lower() == state.lower()]
-    if family_friendly is not None:
-        packages = packages[packages['Family_Friendly'] == family_friendly]
-    if budget is not None:
-        packages = packages[packages['Budget'] <= budget]
-    
+
+    # Check if "Family_Friendly" column exists before filtering
+    if 'Family_Friendly' in df.columns and family_friendly is not None:
+        packages = packages[packages['Family_Friendly'].str.lower() == "yes"] if family_friendly else packages
+
+    # Check if "Budget(INR)" column exists before filtering
+    if budget is not None and 'Budget(INR)' in df.columns:
+        packages = packages[pd.to_numeric(packages['Budget(INR)'], errors='coerce') <= budget]
+
     if packages.empty:
         return "No travel packages available for this selection."
+    
     return packages.to_string(index=False)
 
 def fetch_general_info(state):
