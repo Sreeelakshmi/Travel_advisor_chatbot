@@ -3,7 +3,7 @@ import google.generativeai as genai
 import streamlit as st
 
 # Load travel package data
-data_path = '/mnt/data/Seven_Sisters_Travel_Packages.csv'
+data_path = 'Seven_Sisters_Travel_Packages.csv'
 df = pd.read_csv(data_path)
 
 # Configure Gemini API
