@@ -70,6 +70,9 @@ st.sidebar.info("The Seven Sisters of India are Arunachal Pradesh, Assam, Manipu
 st.sidebar.title("📌 How to Use")
 st.sidebar.write("1. Type your question in the chat input below.\n2. Get detailed travel insights and available packages.\n3. Explore the sidebar for more details about the region.")
 
+# Ensure correct column name
+budget_col = 'Budget(INR)'
+
 # Sidebar for Travel Packages
 st.sidebar.title("🏝️ Travel Packages")
 st.sidebar.write("Select a state to see available travel packages.")
@@ -77,7 +80,17 @@ selected_state = st.sidebar.selectbox("Choose a State", df['State'].unique())
 
 # Filters for travel packages
 family_friendly = st.sidebar.checkbox("Family Friendly")
-budget = st.sidebar.slider("Budget (INR)", min_value=int(df['Budget'].min()), max_value=int(df['Budget'].max()), value=int(df['Budget'].max()))
+
+# Ensure the column exists and is numeric
+if budget_col in df.columns:
+    df[budget_col] = pd.to_numeric(df[budget_col], errors='coerce')
+    df.dropna(subset=[budget_col], inplace=True)
+    min_budget = int(df[budget_col].min())
+    max_budget = int(df[budget_col].max())
+else:
+    min_budget, max_budget = 5000, 50000  # Default values
+
+budget = st.sidebar.slider("Budget (INR)", min_value=min_budget, max_value=max_budget, value=max_budget)
 
 if selected_state:
     sidebar_package_info = fetch_package_info(selected_state, family_friendly=family_friendly, budget=budget)
