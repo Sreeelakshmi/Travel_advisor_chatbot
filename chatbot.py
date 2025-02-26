@@ -3,13 +3,62 @@ import streamlit as st
 
 # Dictionary containing general travel information
 seven_sisters_info = {
-    "Arunachal Pradesh": { ... },  # Keep the detailed dictionary here
-    "Assam": { ... },
-    "Manipur": { ... },
-    "Meghalaya": { ... },
-    "Mizoram": { ... },
-    "Nagaland": { ... },
-    "Tripura": { ... }
+    "Arunachal Pradesh": {
+        "History": "Arunachal Pradesh was historically known as the North-East Frontier Agency and became a state in 1987.",
+        "Best Places": "Tawang, Ziro Valley, Namdapha National Park",
+        "Best Time": "October to April",
+        "Food": "Thukpa, Apong (Rice Beer), Bamboo Shoot Curry",
+        "Culture": "Home to various tribes like Monpa and Nyishi, known for Losar Festival",
+        "Travel Options": "Flights to Itanagar, road travel from Assam"
+    },
+    "Assam": {
+        "History": "Assam has a rich history with the Ahom dynasty ruling for over 600 years before British annexation.",
+        "Best Places": "Kaziranga National Park, Majuli, Kamakhya Temple",
+        "Best Time": "November to April",
+        "Food": "Masor Tenga, Pithas, Assam Tea",
+        "Culture": "Bihu Festival, Assamese silk weaving, Satriya dance",
+        "Travel Options": "Flights to Guwahati, well-connected by road and rail"
+    },
+    "Manipur": {
+        "History": "Manipur was once ruled by the Meitei kingdom and was integrated into India in 1949.",
+        "Best Places": "Loktak Lake, Kangla Fort, Keibul Lamjao National Park",
+        "Best Time": "October to March",
+        "Food": "Eromba, Singju, Chak-hao Kheer",
+        "Culture": "Rich cultural heritage, classical Manipuri dance, Lai Haraoba festival",
+        "Travel Options": "Flights to Imphal, road travel from Nagaland and Assam"
+    },
+    "Meghalaya": {
+        "History": "Meghalaya was part of Assam until it became a separate state in 1972.",
+        "Best Places": "Cherrapunji, Shillong, Living Root Bridges",
+        "Best Time": "September to May",
+        "Food": "Jadoh, Tungrymbai, Dohneiiong",
+        "Culture": "Khasi and Garo tribes, Wangala Festival",
+        "Travel Options": "Flights to Shillong or road travel from Guwahati"
+    },
+    "Mizoram": {
+        "History": "Mizoram was previously part of Assam and became a full-fledged state in 1987.",
+        "Best Places": "Aizawl, Vantawng Falls, Phawngpui National Park",
+        "Best Time": "October to March",
+        "Food": "Bai, Bamboo Shoot Fry, Misa Mach Poora",
+        "Culture": "Mizo tribe traditions, Chapchar Kut Festival",
+        "Travel Options": "Flights to Aizawl, road travel from Assam"
+    },
+    "Nagaland": {
+        "History": "Nagaland was created in 1963, primarily inhabited by various Naga tribes.",
+        "Best Places": "Kohima, Dzukou Valley, Hornbill Festival Grounds",
+        "Best Time": "October to May",
+        "Food": "Smoked Pork, Bamboo Steamed Fish, Axone",
+        "Culture": "16 Naga tribes, Hornbill Festival",
+        "Travel Options": "Flights to Dimapur, road travel from Assam"
+    },
+    "Tripura": {
+        "History": "Tripura was a princely state before joining India in 1949.",
+        "Best Places": "Ujjayanta Palace, Neermahal, Jampui Hills",
+        "Best Time": "October to March",
+        "Food": "Mui Borok, Gudok, Kosoi Bwtwi",
+        "Culture": "Influences from Bengali and tribal traditions, Kharchi Festival",
+        "Travel Options": "Flights to Agartala, road and rail connectivity"
+    }
 }
 
 # Load travel package data
@@ -22,20 +71,30 @@ def fetch_package_info(state, family_friendly=None, budget=None):
         packages = packages[packages['Family_Friendly'].str.lower() == "yes"] if family_friendly else packages
     if budget is not None and 'Budget(INR)' in df.columns:
         packages = packages[pd.to_numeric(packages['Budget(INR)'], errors='coerce') <= budget]
-    return packages.to_string(index=False) if not packages.empty else "No travel packages available."
+    return packages.head(2).to_string(index=False) if not packages.empty else "No travel packages available."
 
-def fetch_general_info(state):
-    return seven_sisters_info.get(state, "No information available.")
+def fetch_general_info(state, category=None):
+    info = seven_sisters_info.get(state, {})
+    return info.get(category, "No information available.") if category else info
 
 def chatbot_response(user_input):
     words = user_input.lower().split()
     for state in seven_sisters_info.keys():
         if state.lower() in words:
+            category_map = {
+                "history": "History",
+                "places": "Best Places",
+                "time": "Best Time",
+                "food": "Food",
+                "culture": "Culture",
+                "travel": "Travel Options"
+            }
+            for key, category in category_map.items():
+                if key in words:
+                    return f"### 📜 {category} of {state}:\n{fetch_general_info(state, category)}"
             general_info = fetch_general_info(state)
             package_info = fetch_package_info(state)
-            return f"""### 🏞️ General Information:
-{general_info}\n\n### 📦 Travel Packages:
-{package_info}"""
+            return f"### 🏞️ General Information:\n{general_info}\n\n### 📦 Best Travel Packages:\n{package_info}"
     return "Please specify a state from the Seven Sisters of India."
 
 # Streamlit UI
