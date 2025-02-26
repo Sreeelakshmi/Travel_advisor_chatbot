@@ -33,9 +33,9 @@ def chatbot_response(user_input):
         if state.lower() in words:
             general_info = fetch_general_info(state)
             package_info = fetch_package_info(state)
-            return f"### 🏞️ General Information:
+            return f"""### 🏞️ General Information:
 {general_info}\n\n### 📦 Travel Packages:
-{package_info}"
+{package_info}"""
     return "Please specify a state from the Seven Sisters of India."
 
 # Streamlit UI
