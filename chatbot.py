@@ -64,7 +64,7 @@ def fetch_package_info(state, family_friendly=None, budget=None):
         packages = packages[packages['Family_Friendly'].str.lower() == "yes"] if family_friendly else packages
     if budget is not None and 'Budget(INR)' in df.columns:
         packages = packages[pd.to_numeric(packages['Budget(INR)'], errors='coerce') <= budget]
-    return packages.head(2).to_string(index=False) if not packages.empty else "No travel packages available."
+    return packages.head(1).to_string(index=False) if not packages.empty else "No travel packages available."
 
 def fetch_general_info(state, category=None):
     info = seven_sisters_info.get(state, {})
