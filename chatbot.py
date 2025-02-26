@@ -124,6 +124,7 @@ selected_state = st.sidebar.selectbox("Choose a State", df['State'].unique())
 family_friendly = st.sidebar.checkbox("Family Friendly")
 budget = st.sidebar.slider("Budget (INR)", min_value=5000, max_value=50000, value=50000)
 
+
 if selected_state:
     sidebar_package_info = fetch_package_info(selected_state, family_friendly, budget)
     st.sidebar.text_area("Available Packages", sidebar_package_info, height=200)
